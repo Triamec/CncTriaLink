@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{00833dcb-55d5-4f21-8128-9a0bd9b77e05}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR CONSTANT
+	cAxes			: USINT := 2; (* Number of axes in use *)
+END_VAR
+
+VAR
+	Trialink : Triamec.TL_Trialink2; 			(* the Tria-Link adapter *)
+	Hli	: MCV_HliInterface; 					(* Hli interface *)
+	Axes : ARRAY [1..cAxes] OF TL_CNC_Axis; 	(* the extended triamec axis object with link to the CNC *)
+	
+	initDone : BOOL;	(* initialization done *)
+	i : USINT; 			(* counter variable *)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* ------------------------------------------- *)
+(* Triamec Motion AG, 6340 Baar, Switzerland   *)
+(* Sample Code may be adapted to customer need *)
+(* ------------------------------------------- *)
+
+(* Tria-Link and Axes configuration *)
+IF NOT initDone THEN
+	initDone := Config();
+END_IF
+
+(* Tria-Link cyclic call*)
+Trialink.Execute := gEnableTrialink;
+Trialink.CallSlow();
+gCommunicationReady := gEnableTrialink AND NOT Trialink.Error;
+
+(* HLI interface *)
+IF NOT Hli.Initialized THEN
+	Hli(); // initialize HLI
+END_IF
+
+(* Axes cyclic call *)
+FOR i := 1 TO cAxes DO
+	Axes[i].iAxis := i;				// logical axis number
+	Axes[i].reset := gResetAxes; 	// reset drive errors
+	Axes[i].enable := gEnableAxes; 	// set enable / disable
+	Axes[i].couple := TRUE;			// couple drive to CNC pathplanner
+	Axes[i](Hli := Hli, Trialink := Trialink); 	// cyclic call of cnc axes
+	gCommunicationReady	:= gCommunicationReady AND Axes[i].ready;
+END_FOR]]></ST>
+    </Implementation>
+    <Method Name="Config" Id="{6b7cb05d-60b6-4510-b551-e6c73cccfab4}">
+      <Declaration><![CDATA[METHOD Config : BOOL
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[(* Tria-Link configuration *)
+Trialink.Config.nDevId := 1; // NOV-DP-RAM Id, see TwinCAT System Manager (I/0 > Devices > TriaLink) 
+Trialink.Config.TcEventEnable := TRUE;
+
+(* Axes configuration *)
+(* ---------- Axis 1 ---------- *)
+Axes[1].inc_per_unit 		:= 1000000; // scale between CNC and PLC
+Axes[1].Config.Simulate   	:= FALSE;
+Axes[1].Config.Station    	:= 10;		// The drive address
+Axes[1].Config.SubAxis    	:= TL_Config.SubAxis.FirstAxis; // first or second axis of a two axes drive
+Axes[1].Config.GearFactor 	:= 1;		// multiplication factor of position and velocity data
+Axes[1].Config.ModuloWrap 	:= 0;		// modulo wrap for rotation axes
+Axes[1].referencePos 		:= 0.0;		// reference position to which the axis is set after homing
+	
+(* ---------- Axis 2 ---------- *)
+Axes[2].inc_per_unit 		:= 1000000; // scale between CNC and PLC
+Axes[2].Config.Simulate   	:= TRUE;
+Axes[2].Config.Station    	:= 10;		// The drive address
+Axes[2].Config.SubAxis    	:= TL_Config.SubAxis.SecondAxis; // first or second axis of a two axes drive
+Axes[2].Config.GearFactor 	:= 1;		// multiplication factor of position and velocity data
+Axes[2].Config.ModuloWrap 	:= 0;		// modulo wrap for rotation axes
+Axes[2].referencePos 		:= 0.0; 	// reference position to which the axis is set after homing
+
+Config := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="MAIN">
+      <LineId Id="304" Count="27" />
+      <LineId Id="81" Count="0" />
+    </LineIds>
+    <LineIds Name="MAIN.Config">
+      <LineId Id="6" Count="2" />
+      <LineId Id="12" Count="18" />
+      <LineId Id="32" Count="0" />
+      <LineId Id="31" Count="0" />
+      <LineId Id="5" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

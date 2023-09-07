@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <GVL Name="Triamec_GVL" Id="{278290ad-a1ab-411f-9bc6-2c389160cd66}">
+    <Declaration><![CDATA[VAR_GLOBAL
+	gEnableTrialink : BOOL; 	(* variable to enable Tria-Link *)
+	gEnableAxes : BOOL; 		(* variable to enable all axes *)
+	gResetAxes : BOOL; 			(* variable to reset all axes *)
+	gCommunicationReady : BOOL; (* indicator for Tria-Link and axes readiness *)
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

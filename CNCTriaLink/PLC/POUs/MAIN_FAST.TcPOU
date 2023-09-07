@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN_FAST" Id="{fddeaf38-d347-4ed1-b56c-3f0912bb0e0f}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN_FAST
+VAR
+	i : USINT; (* counter variable *)
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* --------------------------------------------- *)
+(* Triamec Motion AG, 6340 Baar, Switzerland     *)
+(* Sample Code may be adapted to customer need   *)
+(* --------------------------------------------- *)
+
+(* Tria-Link cyclic fast call *)
+MAIN.Trialink.CallFast();
+
+(* CNC axis cyclic fast call *)
+FOR i := 1 TO MAIN.cAxes DO
+	MAIN.Axes[i].Fast();
+END_FOR
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN_FAST">
+      <LineId Id="20" Count="12" />
+      <LineId Id="6" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

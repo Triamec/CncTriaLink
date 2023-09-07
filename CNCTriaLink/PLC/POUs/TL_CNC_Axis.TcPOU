@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="TL_CNC_Axis" Id="{25971058-133e-48aa-afd2-bc5a39e53a15}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK TL_CNC_Axis EXTENDS Triamec.TL_Axis2
+VAR_IN_OUT
+	Trialink	: Triamec.TL_Trialink2; (* the Tria-Link adapter *)
+	Hli			: MCV_HliInterface; (* HLI interface *)
+END_VAR
+VAR_INPUT
+	inc_per_unit : LREAL := 1E7; (* use 10000 inc/deg or 1E7 inc/m *)
+END_VAR
+VAR_OUTPUT
+	messageString  : STRING(100); (* error message *)
+END_VAR
+VAR
+	SercosPhase AT %Q*	: WORD; (* CNC > GEO > Axis > Inputs > Sercos Phase *)
+	SercosStatus AT %Q*	: WORD; (* CNC > GEO > Axis > Inputs > Drive status word *)
+	SercosPosCmd AT %I*	: DINT; (* CNC > GEO > Axis > Outputs > Position command value *) 
+	SercosPosAct AT %Q*	: DINT; (* CNC > GEO > Axis > Inputs > Position feedback 1 value *)		
+	
+	MessageHandler	: TL_AxisMessageHandler;	// provides corresponding message string
+	TcEventLib		: TL_TwinCatError;
+	TcEventDrv		: TL_TwinCatError;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[(* --------------------------------------------- *)
+(* Triamec Motion AG, 6340 Baar, Switzerland     *)
+(* Sample Code may be adapted to customer need   *)
+(* --------------------------------------------- *)
+
+(* 
+	we do not want any offset beween drive and cnc 
+    because the drives have there own setPosition
+	therefore set the following parameters in the axis of the cnc:
+		kenngr.abs_pos_gueltig			1
+		kenngr.set_refpos_mode         	OFFSET
+		kenngr.set_refpos_offset		0
+	this mode ensures, that the cnc does not set cmdPos=actPos when
+	MCControlBoolUnit_SetReferencePosition is set
+*)
+
+SUPER^.CallSlow(Trialink := THIS^.Trialink);
+
+// CNC axis handler
+IF Hli.Initialized AND iAxis >= 1 AND HLI_SYS_AX_MaxIdx >= iAxis THEN
+	(* enable plc control for axis *)
+	gpAx[iAxis-1]^.head.plc_present_w := TRUE;
+	
+	(* enable PLC to drive HLI interface *)
+	gpAx[iAxis-1]^.lr_mc_control.torque_permission.enable_w			:= TRUE;
+	gpAx[iAxis-1]^.lr_mc_control.release_feedhold.enable_w 			:= TRUE;
+	gpAx[iAxis-1]^.lr_mc_control.drive_on.enable_w 					:= TRUE;
+	gpAx[iAxis-1]^.lr_mc_control.set_reference_position.enable_w	:= TRUE;
+	gpAx[iAxis-1]^.lr_mc_control.follow_up.enable_w 				:= TRUE;
+	
+	(* set regulation and feed *)
+	gpAx[iAxis-1]^.lr_mc_control.torque_permission.command_w		:= coupled;
+	gpAx[iAxis-1]^.lr_mc_control.release_feedhold.command_w 		:= enabled;
+	gpAx[iAxis-1]^.lr_mc_control.drive_on.command_w 				:= ready;
+	
+	(* Sercos interface	to CNC *)		
+	sercosPhase	:= 4 * BOOL_TO_WORD(ready);
+	sercosStatus:=   16#8000 * BOOL_TO_WORD(enabled)
+						+ 16#4000 * BOOL_TO_WORD(coupled OR (ready AND NOT(enabled)))
+						+ 16#2000 * BOOL_TO_WORD(error);
+						
+						
+	(* The axis is set to tracking operation (follow up) on or off, i.e. the control loop is opened. The command position implicitly is set to the actual position. *)
+	gpAx[iAxis-1]^.lr_mc_control.follow_up.command_w := followMe;
+	
+	(* HomingPosition *)
+	gpAx[iAxis-1]^.lr_mc_control.set_reference_position.command_w	:= referenced;
+END_IF
+
+// This reads the drive message string into messageHandler.messageString and then sets messageHandler.done
+messageHandler.execute := messageId >= TL_Message.Error; // show only errors
+messageHandler(axis:=MC_axis, Trialink:=THIS^.Trialink);
+
+// This generates a TwinCAT event in case of an axis library error and an axis drive error
+TcEventLib.Execute	:= THIS^.Trialink.Done AND NOT (THIS^.Trialink.Error OR MC_axis.simulate);
+TcEventLib.errorId	:= MC_axis.errorId;
+TcEventLib.source	:= TL_EventSourceId.AxisLib; // See source entry in the ecpx file triamecEventsTrialinkLib*.ecpx
+TcEventLib.par1		:= MC_axis.iAxis;
+TcEventLib();
+
+TcEventDrv.Execute	:= TcEventLib.Execute AND MC_axis.messageId>=TL_Message.Error; // show only errors 
+TcEventDrv.errorId	:= MC_axis.messageId;
+TcEventDrv.source	:= TL_EventSourceId.AxisDrive; // See source entry in the ecpx file triamecEventsDrive*.ecpx
+TcEventDrv.par1		:= MC_axis.iAxis;
+TcEventDrv();]]></ST>
+    </Implementation>
+    <Method Name="Fast" Id="{2eb2b151-42b0-44a6-ad4a-7d0d2dbd4361}">
+      <Declaration><![CDATA[METHOD Fast
+VAR
+	positionAct : LREAL; (* actual position *)
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[// The warning can be disabled here as the user is aware of the risk that the reference may not be valid by checking its validity
+{warning disable C0371}
+
+// Checking the VAR_IN_OUT reference, leave the current method in case of invalid reference
+IF NOT __ISVALIDREF(Trialink) THEN
+     RETURN;
+END_IF
+
+(* get the coordinates from the NC/CNC and write it to the drive *)
+fastPositionCmd := DINT_TO_LREAL( SercosPosCmd ) / inc_per_unit;
+SUPER^.CallFast( Trialink := Trialink );
+
+(* get the actual position from the drive and pass it to NC *)
+positionAct := ActualPositionFast(Trialink := Trialink);
+(* coerse position to DINT range *)
+IF ABS(positionAct * inc_per_unit) < 16#7FFFFFFF  THEN
+	SercosPosAct := LREAL_TO_DINT(positionAct * inc_per_unit);
+ELSIF positionAct < 0 THEN
+	SercosPosAct := TO_DINT(16#80000000);
+ELSE
+	SercosPosAct := 16#7FFFFFFF;
+END_IF
+
+// The warning may be restored at the end of the access area
+{warning restore C0371}]]></ST>
+      </Implementation>
+    </Method>
+    <LineIds Name="TL_CNC_Axis">
+      <LineId Id="24" Count="13" />
+      <LineId Id="9" Count="0" />
+      <LineId Id="46" Count="1" />
+      <LineId Id="55" Count="2" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="110" Count="0" />
+      <LineId Id="116" Count="0" />
+      <LineId Id="112" Count="3" />
+      <LineId Id="111" Count="0" />
+      <LineId Id="105" Count="0" />
+      <LineId Id="118" Count="2" />
+      <LineId Id="117" Count="0" />
+      <LineId Id="130" Count="0" />
+      <LineId Id="133" Count="3" />
+      <LineId Id="131" Count="0" />
+      <LineId Id="139" Count="1" />
+      <LineId Id="142" Count="0" />
+      <LineId Id="144" Count="2" />
+      <LineId Id="141" Count="0" />
+      <LineId Id="63" Count="16" />
+      <LineId Id="45" Count="0" />
+    </LineIds>
+    <LineIds Name="TL_CNC_Axis.Fast">
+      <LineId Id="25" Count="0" />
+      <LineId Id="23" Count="0" />
+      <LineId Id="29" Count="0" />
+      <LineId Id="31" Count="2" />
+      <LineId Id="30" Count="0" />
+      <LineId Id="24" Count="0" />
+      <LineId Id="6" Count="12" />
+      <LineId Id="5" Count="0" />
+      <LineId Id="27" Count="1" />
+      <LineId Id="26" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
