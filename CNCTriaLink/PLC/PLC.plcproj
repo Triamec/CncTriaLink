@@ -17,9 +17,9 @@
     <LibraryReferences>{8d6eab33-a92e-451f-b2db-ad4e6450cdab}</LibraryReferences>
     <Company>Triamec Motion AG</Company>
     <Released>false</Released>
-    <Title>CNC Sample Code Tria-Link</Title>
+    <Title>CNC Sample Code using Tria-Link</Title>
     <Author>Triamec Motion AG</Author>
-    <Description>CNC Sample Code Tria-Link</Description>
+    <Description>CNC Sample Code using Tria-Link</Description>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Fast_Task.TcTTO">
