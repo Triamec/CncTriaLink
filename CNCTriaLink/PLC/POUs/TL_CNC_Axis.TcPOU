@@ -80,13 +80,13 @@ messageHandler(axis:=MC_axis, Trialink:=THIS^.Trialink);
 // This generates a TwinCAT event in case of an axis library error and an axis drive error
 TcEventLib.Execute	:= THIS^.Trialink.Done AND NOT (THIS^.Trialink.Error OR MC_axis.simulate);
 TcEventLib.errorId	:= MC_axis.errorId;
-TcEventLib.source	:= TL_EventSourceId.AxisLib; // See source entry in the ecpx file triamecEventsTrialinkLib*.ecpx
+TcEventLib.source	:= TL_EventSourceId.AxisLib; // See source entry in file triamecEventsTrialink.xml
 TcEventLib.par1		:= MC_axis.iAxis;
 TcEventLib();
 
 TcEventDrv.Execute	:= TcEventLib.Execute AND MC_axis.messageId>=TL_Message.Error; // show only errors 
 TcEventDrv.errorId	:= MC_axis.messageId;
-TcEventDrv.source	:= TL_EventSourceId.AxisDrive; // See source entry in the ecpx file triamecEventsDrive*.ecpx
+TcEventDrv.source	:= TL_EventSourceId.AxisDrive; // See source entry in the file triamecEventsDrive.xml
 TcEventDrv.par1		:= MC_axis.iAxis;
 TcEventDrv();]]></ST>
     </Implementation>
