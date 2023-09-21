@@ -46,3 +46,18 @@ The following global variables have been defined to control and monitor the *Tri
 | `gEnableAxes`         | variable to enable all axes                |
 | `gResetAxes`          | variable to reset all axes                 |
 | `gCommunicationReady` | indicator for Tria-Link and axes readiness |
+
+## CNC Axis Function Block (TL_CNC_Axis)
+
+The function block extends *TL_Axis2* available in the *TriamecLib* by the CNC specific interfaces.
+Inputs and outputs (%I*, %Q*) are specified to link the axis function block and CNC Axis.
+Ensure that these links are in place.
+
+![Mapping](./doc/Mapping.png)
+
+## Test the Example
+
+- **Save** and **Rebuild** the Solution.
+- **Activate** the configuration and set TwinCAT to *Run Mode*.
+- **Login** and **Start** the PLC.
+- Open *Triamec_GVL* and set **gEnableTrialink** to **TRUE** and wait for **gCommunicationReady** getting **TRUE**.
