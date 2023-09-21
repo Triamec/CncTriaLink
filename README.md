@@ -70,7 +70,7 @@ Ensure that these links are in place.
 
 ### Ready to move the axes
 
-You should now be able to control the axes over NC Axis GUI (Online GUI).
-The buttons **-- F1**, **- F2**, **+ F3** and **++ F4** are in the **MOTION > NC-Task 1 SAF > Axes > Axis N > Online** dialog.
+You should now be able to control the axes over CNC Channel GUI (Online GUI).
+The control buttons are in the **MOTION > CNC > Axes > Channel_N > Online** dialog.
 
 ![Online Dialog](./doc/OnlineDialog.png)
