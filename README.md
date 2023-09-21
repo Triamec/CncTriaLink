@@ -47,7 +47,7 @@ The following global variables have been defined to control and monitor the *Tri
 | `gResetAxes`          | variable to reset all axes                 |
 | `gCommunicationReady` | indicator for Tria-Link and axes readiness |
 
-## CNC Axis Function Block (TL_CNC_Axis)
+## CNC Axis Function Block (CNC_Axis)
 
 The function block extends *TL_Axis2* available in the *TriamecLib* by the CNC specific interfaces.
 Inputs and outputs (%I*, %Q*) are specified to link the axis function block and CNC Axis.

@@ -9,7 +9,7 @@ END_VAR
 VAR
 	Trialink : Triamec.TL_Trialink2; 			(* the Tria-Link adapter *)
 	Hli	: MCV_HliInterface; 					(* Hli interface *)
-	Axes : ARRAY [1..cAxes] OF TL_CNC_Axis; 	(* the extended triamec axis object with link to the CNC *)
+	Axes : ARRAY [1..cAxes] OF CNC_Axis; 	(* the extended triamec axis object with link to the CNC *)
 	
 	initDone : BOOL;	(* initialization done *)
 	i : USINT; 			(* counter variable *)

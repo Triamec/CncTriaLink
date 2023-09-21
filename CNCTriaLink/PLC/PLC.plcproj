@@ -38,7 +38,7 @@
     <Compile Include="POUs\MAIN_FAST.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="POUs\TL_CNC_Axis.TcPOU">
+    <Compile Include="POUs\CNC_Axis.TcPOU">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
