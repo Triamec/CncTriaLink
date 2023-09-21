@@ -61,3 +61,16 @@ Ensure that these links are in place.
 - **Activate** the configuration and set TwinCAT to *Run Mode*.
 - **Login** and **Start** the PLC.
 - Open *Triamec_GVL* and set **gEnableTrialink** to **TRUE** and wait for **gCommunicationReady** getting **TRUE**.
+
+> [!NOTE]
+> It can take up to 6s to boot the Tria-Link.
+
+- Enable the axes by setting **gEnableAxes** to **TRUE**.
+- If an error occurs, toggle **gResetAxes** an try to enable again.
+
+### Ready to move the axes
+
+You should now be able to control the axes over NC Axis GUI (Online GUI).
+The buttons **-- F1**, **- F2**, **+ F3** and **++ F4** are in the **MOTION > NC-Task 1 SAF > Axes > Axis N > Online** dialog.
+
+![Online Dialog](./doc/OnlineDialog.png)
